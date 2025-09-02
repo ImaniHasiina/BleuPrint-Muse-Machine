@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BleuPrint Muse Machine (5 Decks)</title>
+<style>
+:root{--bleu:#007BA7;--charcoal:#0B0C0F;--bone:#F3F4F6;--card:#111317;--line:#1F2430;--muted:#9FB0C7}
+*{box-sizing:border-box}
+body{margin:0;background:var(--charcoal);color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+header{padding:18px 14px;border-bottom:1px solid var(--line);text-align:center}
+h1{margin:0;font-size:18px;font-weight:800;color:#fff}
+.sub{margin-top:6px;color:var(--muted);font-size:12px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;padding:12px 10px 0}
+.tab{padding:8px 10px;background:#0E1218;border:1px solid var(--line);border-radius:10px;font-size:13px;cursor:pointer}
+.tab.active{outline:2px solid var(--bleu)}
+.deck{display:none;padding:12px 10px 26px}
+.deck.active{display:block}
+.controls{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 10px}
+.btn{background:linear-gradient(135deg,var(--bleu),#5a9fc1);border:0;color:#fff;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer}
+.btn.ghost{background:#0E1218;border:1px solid var(--line)}
+.toggle{display:inline-flex;align-items:center;gap:8px;background:#0E1218;border:1px solid var(--line);padding:8px 10px;border-radius:10px;font-size:12px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+.card h3{margin:0 0 8px;font-size:13px;color:#D7E1F0;position:relative;padding-right:28px}
+.pill{display:inline-block;background:#0D1016;border:1px solid var(--line);border-radius:8px;padding:6px 8px;margin:4px 4px 0 0;font-size:12px;user-select:none}
+.palette{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+.sw{width:18px;height:18px;border-radius:4px;border:1px solid #222}
+.brief{margin-top:12px;background:#0D1016;border:1px dashed var(--line);border-radius:12px;padding:10px;font-size:12px;color:#C9D1E3}
+.footer{padding:12px;color:var(--muted);font-size:11px;text-align:center}
+.copy{background:#0E1218;border:1px solid var(--line);color:#EAF1FF;padding:8px 10px;border-radius:8px;cursor:pointer}
+.hint{color:var(--muted);font-size:11px;margin-left:6px}
+
+/* --- Upgrade #1: lock + mini reroll --- */
+.pill.locked{outline:2px solid var(--bleu);background:#0b1220}
+.card .mini{position:absolute;top:-2px;right:0;font-size:11px;background:#0E1218;border:1px solid var(--line);
+  padding:4px 6px;border-radius:6px;cursor:pointer;line-height:1}
+
+@media (max-width:480px){.pill{font-size:11px}.tab{font-size:12px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>BleuPrint Muse Machine</h1>
+  <div class="sub">Roll a deck • Receive a prompt • Make some art</div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" data-target="makeup">Makeup</div>
+  <div class="tab" data-target="painting">Painting</div>
+  <div class="tab" data-target="drawing">Drawing</div>
+  <div class="tab" data-target="fashion">Fashion</div>
+  <div class="tab" data-target="photoshoot">Photoshoot</div>
+</div>
+
+<!-- DECKS -->
+<div id="makeup" class="deck active"></div>
+<div id="painting" class="deck"></div>
+<div id="drawing" class="deck"></div>
+<div id="fashion" class="deck"></div>
+<div id="photoshoot" class="deck"></div>
+
+<div class="footer">#BleuPrintMuseMachine #BleuPrintCSA #ImaniHasiinaArtHouse #ChaosToCanvas #ADHDArtist #BlackArtists #CreativeMakeup #VisualArtist #ArtChallenge</div>
+
+<script>
+// -------- PALETTE --------
+const PALETTE = [
+ ["Cerulean","#007BA7"],["Bone","#F3F4F6"],["Espresso","#3B2F2F"],["Violet","#7B5FC8"],["Neon Green","#39FF14"],
+ ["Neon Pink","#FF36B3"],["Chrome Silver","#C0C0C0"],["Gold","#D4AF37"],["Black","#000000"],["Red","#E1262E"],
+ ["Tangerine Orange","#FF7A00"],["Sky Blue","#76B8FF"],["Olive Green","#556B2F"],["Peach","#FFB38A"],
+ ["Teal","#2CB1A1"],["White","#FFFFFF"],["Emerald","#00A86B"],["Bronze","#CD7F32"],["Lavender","#C8A2C8"],["Fuchsia","#FF00FF"]
+];
+function randomPalette(){
+  const n = 1 + Math.floor(Math.random()*4);
+  const idx = new Set(); const out=[];
+  while(out.length<n){
+    const i = Math.floor(Math.random()*PALETTE.length);
+    if(idx.has(i)) continue; idx.add(i); out.push(PALETTE[i]);
+  }
+  return out;
+}
+function paletteNode(){
+  const wrap = document.createElement('div'); wrap.className='palette';
+  const names = [];
+  randomPalette().forEach(([name,hex])=>{
+    const sw = document.createElement('div'); sw.className='sw'; sw.style.background=hex; sw.title=name; wrap.appendChild(sw);
+    names.push(name);
+  });
+  const label = document.createElement('div'); label.style.marginTop='6px'; label.style.fontSize='12px'; label.style.color='#C9D1E3';
+  label.textContent = names.join(' + ');
+  const container = document.createElement('div'); container.appendChild(wrap); container.appendChild(label);
+  return {node:container, names};
+}
+const choice = arr => arr[Math.floor(Math.random()*arr.length)];
+
+// combo helper (25% chance to fuse two prompts)
+function maybeComboPrompt(arr) {
+  if (Math.random() < 0.25) {
+    const a = arr[Math.floor(Math.random() * arr.length)];
+    let b = arr[Math.floor(Math.random() * arr.length)];
+    if (b === a) b = arr[(arr.indexOf(a) + 1) % arr.length];
+    return `${a} + ${b}`;
+  }
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+// -------- LIBRARIES --------
+const LIB = {
+  makeup:{
+    finish:["Glossy","Matte","Chrome/Metallic","Neon / UV","Iridescent","Velvet","Wet look","Watercolor blend","Marble","Smoky"],
+    focus:["Eyes only","Lips only","Half face","Full face","Body accent (neck/chest/hands)","Brows/forehead","Cheeks only"],
+    technique:[
+      "Graphic liner (clean, sharp)","Thread-lines (ultra thin squiggles)","Negative-space liner","Floating crease","Reverse wing",
+      "Waterline pop","Color blocking","Cut-crease sculpt","Airbrush glass-skin veil","Soft-focus airbrush edges",
+      "Stipple / freckle texture","Smoked edges (blurred)","Drip / bleed effect","Chrome mapping (metallic H/L)",
+      "Marble veining","Watercolor wash","Pixel / 8-bit blocks","Illusion seams (cracks/stitches)","Halo / crown rings",
+      "UV glow tracing (neon lines)","Rhinestone path (no glitter)","Tape-mask edges (hard lines)"
+    ],
+    inspo:["Lightning bolts","Shattered glass","Dripping chrome","Flowers & vines","Waves/water","Flames","Stars","Clouds","Graffiti lines","Broken statue","Thread-like linework","Smoke","Bubbles","Chains","Animal print","Halo/crown","Abstract squiggles"],
+    inspoPro:[
+      "Optical-illusion cracks (trompe-l'œil)","Chrome face mapping (full grayscale metal)","Moiré line net (over cheeks/temples)",
+      "Circuit board tracings (face to neck)","Prism/refraction highlights (split light)","Heat-map gradient (cool→warm zones)",
+      "Duochrome interference shift (forehead/cheekbones)","Geode crystal edge (temple/jaw)","Stained-glass panels (hard lines + fills)",
+      "Textile imprint (mesh/pattern press)","Halftone dot shading (comic print)","Biomech seams (panel lines with bolts)",
+      "Oil-slick iridescent pooling","Negative-space cutouts (cheek/eye masks)","Chrome drip over matte base (contrast finish)"
+    ],
+    constraints:["Use 3 colors max","15 minutes only","No brushes (tools/hands)","Non-dominant hand","One side only","Hide a tiny faith symbol","Only use what’s on your desk","Blend with one tool","No mirror","Stop after 10 steps"]
+  },
+
+  painting:{
+    medium:["Acrylic","Gouache","Ink","Markers","Mixed media","Pastel/chalk","Oil (smooth)","Charcoal","Digital style"],
+    surface:["Canvas","Watercolor paper","Bristol","Cardboard","Wood panel"],
+    technique:["Palette knife","Thin pen lines","Dry brush","Drips","Glazing","Scumbling","Spray paint","Pastel blend","Marker pop-art"],
+    inspoEasy:["Dots","Zig-zags","Spirals","Checkerboard","Stripes","Constellation dots/lines","Hearts","Eyes repeat","Lips repeat","Leaves","Branches","Rain","Sun/Moon","Stars","Butterfly","Feathers","Music notes","Keys","Chains","Halo","Drips","Splatter","Grid","Puzzle pieces","Brick wall"],
+    inspoAdv:["Waves/water","Flames","Broken statue","Clouds","Graffiti lines","Lightning bolts","Thread tangles","Shattered glass","Chrome drips","Bubbles","Stained glass","Fabric folds","Animal print","Marbling","Detailed crown/halo",
+      "Anatomy study: hands in motion (3 poses)","Portrait with extreme rim light","Foreshortened arm toward camera","Fabric study: satin folds with highlights","Reflective sphere in a room (true reflections)","Glass object with refraction","Chrome object with environment reflections","Wet surface highlights (cheeks/nose/forehead)","Smoke wisps wrapping a face","Water splash around an object (freeze-frame)","Hard shadows through blinds across face","Backlit silhouette + halo edge","Animal skull + flowers (value focus)","Insect wing macro (veins + translucency)","Stone bust cracked open (inner texture)","Overlapping translucent shapes (multiply values)","Hair texture study: curls vs. straight","Complex braids (rhythm + depth)","Hands holding glass with liquid","Draped figure under sheet (ghost form)"],
+    inspoPro:["Escher-style staircase illusion","Impossible geometry (Penrose triangle) in a room","Two light sources (cool + warm) on one subject","Portrait reflected in warped metal","Fish-eye perspective interior","City corner in 2-point perspective (night rain)","Overhead crowd (scale + foreshortening)","Underwater figure (caustics + floaty fabric)","Glass + chrome still life (true reflections + cast shadows)","Reflections in puddles (street scene)","Translucent materials: jelly, gummies, resin","Anatomy: dynamic back muscles + scapula movement","Extreme expression study (laugh/cry/yell) with wrinkles","Motion blur figure (gesture + smudge)","Hands interacting with light (phone screen glow)","Portrait through textured glass (blur + distortion)","Multi-exposure face (ghosted layers)","Macro eye study with reflected scene","Creature kitbash: beetle + orchid + human features","Surreal collage: floating rooms + stairs + clouds"],
+    constraints:["15 minutes only","Non-dominant hand","No eraser","Use 1 tool only","Hand-size canvas","Fill entire page","Exactly 2 colors"]
+  },
+
+  drawing:{
+    medium:["Graphite","Charcoal","Ink (brush/pen)","Alcohol markers","Colored pencil","Digital sketch"],
+    technique:[
+      "Cross-hatching (layered lines for shading)","Stippling (dots for texture)","Contour line (continuous outline)","Gesture sketch (loose motion lines)","Negative space drawing",
+      "Blind contour (don’t look at paper)","Continuous line (never lift pen)","Scribble mass shading","Loose sketch + refine later","Grid build-up (box by box)","Erased highlights (draw with eraser)",
+      "Tonal blocks (shading in chunks)","Feathered shading","Hatching gradients","Smudge shading with finger/tissue","Pointillism dots (controlled pattern)","Line weight play (thick vs. thin)",
+      "Overlapping silhouettes","Quick thumbnails (tiny sketches)","Layered tracing (ghost images)"
+    ],
+    inspoEasy:["Dots","Zig-zags","Spirals","Checkerboard","Stripes","Constellation dots/lines","Hearts","Eyes repeat","Lips repeat","Leaves","Branches","Rain","Sun/Moon","Stars","Butterfly","Feathers","Music notes","Keys","Chains","Halo","Drips","Splatter","Grid","Puzzle pieces","Brick wall"],
+    inspoAdv:["Waves/water","Flames","Broken statue","Clouds","Graffiti lines","Lightning bolts","Thread tangles","Shattered glass","Bubbles","Stained glass","Fabric folds","Animal print","Marbling",
+      "Anatomy study: hands in motion (3 poses)","Portrait with extreme rim light","Foreshortened arm toward camera","Fabric study: satin folds with highlights","Reflective sphere in a room (true reflections)","Glass object with refraction","Chrome object with environment reflections","Wet surface highlights (cheeks/nose/forehead)","Smoke wisps wrapping a face","Water splash around an object (freeze-frame)","Hard shadows through blinds across face","Backlit silhouette + halo edge","Animal skull + flowers (value focus)","Insect wing macro (veins + translucency)","Stone bust cracked open (inner texture)","Overlapping translucent shapes (multiply values)","Hair texture study: curls vs. straight","Complex braids (rhythm + depth)","Hands holding glass with liquid","Draped figure under sheet (ghost form)"],
+    inspoPro:["Escher-style staircase illusion","Impossible geometry (Penrose triangle) in a room","Two light sources (cool + warm) on one subject","Portrait reflected in warped metal","Fish-eye perspective interior","City corner in 2-point perspective (night rain)","Overhead crowd (scale + foreshortening)","Underwater figure (caustics + floaty fabric)","Glass + chrome still life (true reflections + cast shadows)","Reflections in puddles (street scene)","Translucent materials: jelly, gummies, resin","Anatomy: dynamic back muscles + scapula movement","Extreme expression study (laugh/cry/yell) with wrinkles","Motion blur figure (gesture + smudge)","Hands interacting with light (phone screen glow)","Portrait through textured glass (blur + distortion)","Multi-exposure face (ghosted layers)","Macro eye study with reflected scene","Creature kitbash: beetle + orchid + human features","Surreal collage: floating rooms + stairs + clouds"],
+    constraints:["15 minutes only","Non-dominant hand","No eraser","Use 1 tool only","Hand-size paper","Fill entire page","Exactly 2 colors"]
+  },
+
+  fashion:{
+    look:["Grunge","Sleek/minimal","Avant-garde","Deconstructed","Streetwear layered","Couture drama","Futuristic metallic","Retro/vintage","Monochrome fit","Gender-fluid styling"],
+    tops:["Corset/bustier","Blazer/structured jacket","Oversized hoodie","Button-up shirt","Crop top","Sheer layer","Graphic tee","Knit/sweater"],
+    bottoms:["Wide-leg trousers","Cargo pants","Jeans (distressed/patch)","Mini skirt","Maxi skirt","Tailored shorts","Leggings/bodycon","Skort/asym"],
+    shoes:["Sneakers","Boots (ankle/thigh)","Heels","Flats/loafers","Sandals"],
+    accessories:["Jewelry","Bag/clutch","Hat/headwear","Belt","Sunglasses","Scarf/wrap"],
+    outerwear:["Trench","Cape/dramatic","Bomber","Denim jacket","Puffer","Kimono/drape"],
+    inspo:["Corset","Denim remix","Tulle drama","Metallics","Oversized fit","Asymmetry","Chains/hardware","Sheer layers","Patchwork","Bold pattern","Fringe","Utility straps","Futuristic armor","Soft romantic"],
+    inspoPro:[
+      "Sculptural silhouette (exaggerated hips/shoulders)","Modular panels (attach/detach parts)","Deconstruction with visible stitching","Armored corsetry (hard edges/plates)",
+      "Textural mashup (sheer+tulle+denim)","Asymmetric drape with train","Monochrome with extreme proportions","Metallic stack (foil, chrome accents)",
+      "Utility webbing/straps engineering","Negative-space cutouts (geometric)"
+    ],
+    actions:["Runway strut","Twirl/jump motion","Seated floor pose","Close-up accessory flex","Dramatic lean","Garment-as-prop","Hide face with piece","Duo/group interaction"],
+    actionsPro:[
+      "High-speed spin (garment flare capture)","Wind/fan test (fabric behavior)","Garment-as-architecture (pose inside it)","Partner lift/pull tension","Crawl/low-angle power pose","Step off a block (motion still)"
+    ],
+    constraints:["3 garments max","Thrifted only","Black + 1 pop color","Must include oversized","No accessories","No shoes shown","20-minute style limit","Wear something 'wrong'"],
+    constraintsPro:[
+      "Zero-sew styling (pins/clips/ties only)","All-thrift flip (visible alterations)","Two garments only (extreme styling)","Single color, multiple textures","No closures—wrap/engineer fit","Oversize + fitted contrast mandate"
+    ]
+  },
+
+  photo:{
+    style:["Editorial glossy","Raw street","Dreamy surreal","Studio minimal","Dark moody","Pop-art vibrant","Nature/outdoor","Runway energy","Vintage film","Experimental distortions"],
+    stylePro:[
+      "High-contrast chiaroscuro","Colored-gel split lighting","Hard flash + motion ghost","Lens distortion/DIY prisming","Fog + backlight silhouette","Projection-mapped texture"
+    ],
+    focus:["Face close-up","Full body","Hands/details","Backdrop environment","Prop as subject","Movement/action","Group dynamic"],
+    objects:["Mirrors","Smoke","Neon lights","Flowers","Balloons","Chains","Water/wet look","Fabric drape","Chair/stool/ladder","Frames","Shadow shapes","Plastic wrap","Paint splatter","Disco ball","Candles","Feathers","Paper props","Graffiti wall","Sky/clouds"],
+    objectsPro:[
+      "Haze/fog machine","Prism/crystal refraction","Mylar/foil backdrop (crinkle specular)","Water sheet/spray bottle","Projector patterns (grids/text)","Elastic/nylon stretch fabric"
+    ],
+    actions:["Mid-air jump","Hair flip","Laugh hard","Lay on floor","Look away drama","Hold object to camera","Twist/contort","Walk/run through frame","Cover face/peek","Push/pull partner","Eyes closed","Whisper moment","Shout/scream","Balance on one foot","Reach outward"],
+    actionsPro:[
+      "Hair whip with gel backlight","Prism to lens (hand in frame)","Run-through shot (blur trail)","Fabric parachute throw","Mirror hand kiss (symmetry)","Shadow-play choreography"
+    ],
+    constraints:["15-min setup","1 prop only","Outdoors only","No backdrop","Natural light only","One focal length","No standing poses","Seated or floor only","Monochrome scene"],
+    constraintsPro:[
+      "One hard light + one gel only","No backdrop—use found textures","30-second burst (shoot fast)","Only reflections/refractions","Floor-only posing series","Hands-in-frame storytelling"
+    ]
+  }
+};
+
+// ---------- HELPERS FOR UPGRADE #1 ----------
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function rerollCard(cardEl, getItems){
+  const pills = Array.from(cardEl.querySelectorAll('.pill:not(.locked)'));
+  const items = getItems();
+  pills.forEach(p => { p.textContent = pick(items); });
+}
+
+// -------- BUILD A DECK --------
+function buildDeck(rootId){
+  const root = document.getElementById(rootId);
+  root.innerHTML = '';
+  const controls = document.createElement('div'); controls.className='controls';
+  const rollBtn = document.createElement('button'); rollBtn.className='btn'; rollBtn.textContent='🎲 Roll';
+  const ndLabel = document.createElement('label'); ndLabel.className='toggle';
+  const ndChk = document.createElement('input'); ndChk.type='checkbox'; ndLabel.appendChild(ndChk); ndLabel.appendChild(document.createTextNode(' ND-Friendly'));
+  const chLabel = document.createElement('label'); chLabel.className='toggle';
+  const ch = document.createElement('input'); ch.type='checkbox'; chLabel.appendChild(ch); chLabel.appendChild(document.createTextNode(' Chaos Mode'));
+  const copyBtn = document.createElement('button'); copyBtn.className='btn ghost'; copyBtn.textContent='📋 Copy Brief';
+  controls.appendChild(rollBtn); controls.appendChild(ndLabel); controls.appendChild(chLabel); controls.appendChild(copyBtn);
+  root.appendChild(controls);
+
+  const cards = document.createElement('div'); cards.className='cards'; root.appendChild(cards);
+  const brief = document.createElement('div'); brief.className='brief'; root.appendChild(brief);
+
+  function addCard(title, items, getItems){
+    const c = document.createElement('div'); c.className='card';
+    const h = document.createElement('h3'); h.textContent=title; c.appendChild(h);
+
+    const mini = document.createElement('button'); mini.className='mini'; mini.textContent='↻';
+    h.appendChild(mini);
+
+    (Array.isArray(items)?items:[items]).forEach(t=>{
+      const p=document.createElement('span'); p.className='pill'; p.textContent=t;
+      p.addEventListener('click', ()=> p.classList.toggle('locked'));
+      c.appendChild(p);
+    });
+
+    mini.addEventListener('click', ()=> rerollCard(c, getItems));
+    cards.appendChild(c);
+  }
+
+  function roll(){
+    cards.innerHTML=''; brief.textContent='';
+    const nd = ndChk.checked; const chaos = ch.checked;
+
+    // Palette (skip photoshoot)
+    if(rootId!=='photoshoot'){
+      const palCard = document.createElement('div'); palCard.className='card';
+      const h = document.createElement('h3'); h.textContent='Palette'; palCard.appendChild(h);
+      const {node:namesNode} = paletteNode(); palCard.appendChild(namesNode);
+      cards.appendChild(palCard);
+    }
+
+    const parts = [];
+
+    if(rootId==='makeup'){
+      const fin = choice(LIB.makeup.finish);
+      const foc = nd ? "Full face" : choice(LIB.makeup.focus);
+      const tech = choice(LIB.makeup.technique);
+      const poolM = nd ? LIB.makeup.inspo : LIB.makeup.inspo.concat(LIB.makeup.inspoPro || []);
+      const insp = maybeComboPrompt(poolM);
+
+      addCard('Finish', fin, ()=>LIB.makeup.finish);
+      if(!nd) addCard('Focus Area',foc, ()=>LIB.makeup.focus);
+      addCard('Technique',tech, ()=>LIB.makeup.technique);
+      addCard('Inspo',insp, ()=> (nd?LIB.makeup.inspo:LIB.makeup.inspo.concat(LIB.makeup.inspoPro||[])));
+      if(chaos) addCard('Constraint', choice(LIB.makeup.constraints), ()=>LIB.makeup.constraints);
+
+      parts.push(`Finish: ${fin}`); if(!nd) parts.push(`Focus: ${foc}`); parts.push(`Technique: ${tech}`, `Inspo: ${insp}`);
+    }
+
+    if(rootId==='painting'){
+      const med = choice(LIB.painting.medium);
+      const surf = choice(LIB.painting.surface);
+      const tech = choice(LIB.painting.technique);
+      const poolP = nd ? LIB.painting.inspoEasy : LIB.painting.inspoEasy.concat(LIB.painting.inspoAdv, LIB.painting.inspoPro);
+      const insp = maybeComboPrompt(poolP);
+
+      addCard('Medium',med, ()=>LIB.painting.medium);
+      addCard('Surface',surf, ()=>LIB.painting.surface);
+      addCard('Technique',tech, ()=>LIB.painting.technique);
+      addCard('Inspo',insp, ()=> (nd?LIB.painting.inspoEasy:LIB.painting.inspoEasy.concat(LIB.painting.inspoAdv, LIB.painting.inspoPro)));
+      if(chaos) addCard('Constraint', choice(LIB.painting.constraints), ()=>LIB.painting.constraints);
+
+      parts.push(`Medium: ${med}`,`Surface: ${surf}`,`Technique: ${tech}`,`Inspo: ${insp}`);
+    }
+
+    if(rootId==='drawing'){
+      const med = choice(LIB.drawing.medium);
+      const tech = choice(LIB.drawing.technique);
+      const poolD = nd ? LIB.drawing.inspoEasy : LIB.drawing.inspoEasy.concat(LIB.drawing.inspoAdv, LIB.drawing.inspoPro);
+      const insp = maybeComboPrompt(poolD);
+
+      addCard('Medium',med, ()=>LIB.drawing.medium);
+      addCard('Technique',tech, ()=>LIB.drawing.technique);
+      addCard('Inspo',insp, ()=> (nd?LIB.drawing.inspoEasy:LIB.drawing.inspoEasy.concat(LIB.drawing.inspoAdv, LIB.drawing.inspoPro)));
+      if(chaos) addCard('Constraint', choice(LIB.drawing.constraints), ()=>LIB.drawing.constraints);
+
+      parts.push(`Medium: ${med}`,`Technique: ${tech}`,`Inspo: ${insp}`);
+    }
+
+    if(rootId==='fashion'){
+      const look = choice(LIB.fashion.look);
+      const top = choice(LIB.fashion.tops);
+      const bottom = choice(LIB.fashion.bottoms);
+      const shoes = nd ? null : choice(LIB.fashion.shoes);
+      const acc = nd ? null : choice(LIB.fashion.accessories);
+      const out = nd ? null : (Math.random()<0.5?choice(LIB.fashion.outerwear):null);
+      const poolF = nd ? LIB.fashion.inspo : LIB.fashion.inspo.concat(LIB.fashion.inspoPro || []);
+      const insp = maybeComboPrompt(poolF);
+
+      addCard('Look / Style',look, ()=>LIB.fashion.look);
+      addCard('Focus Pieces',[top,bottom].filter(Boolean), ()=>LIB.fashion.tops.concat(LIB.fashion.bottoms));
+      addCard('Inspo',insp, ()=> (nd?LIB.fashion.inspo:LIB.fashion.inspo.concat(LIB.fashion.inspoPro||[])));
+      if(!nd){
+        if(out) addCard('Outerwear',out, ()=>LIB.fashion.outerwear);
+        if(shoes) addCard('Shoes',shoes, ()=>LIB.fashion.shoes);
+        if(acc) addCard('Accessories',acc, ()=>LIB.fashion.accessories);
+      }
+      if(chaos){
+        const poolC = (LIB.fashion.constraints || []).concat(LIB.fashion.constraintsPro || []);
+        addCard('Constraint', choice(poolC), ()=>poolC);
+      }
+
+      parts.push(`Style: ${look}`,`Focus: ${[top,bottom,shoes,acc,out].filter(Boolean).join(', ')}`,`Inspo: ${insp}`);
+    }
+
+    if(rootId==='photoshoot'){
+      const stylePool = nd ? LIB.photo.style : LIB.photo.style.concat(LIB.photo.stylePro || []);
+      const style = maybeComboPrompt(stylePool);
+      const foc = nd ? "Face close-up" : choice(LIB.photo.focus);
+      const objPool = nd ? LIB.photo.objects : LIB.photo.objects.concat(LIB.photo.objectsPro || []);
+      const obj = choice(objPool);
+      const actPool = nd ? LIB.photo.actions : (LIB.photo.actions || []).concat(LIB.photo.actionsPro || []);
+      const act = nd ? null : choice(actPool);
+
+      addCard('Style / Vibe',style, ()=> (nd?LIB.photo.style:LIB.photo.style.concat(LIB.photo.stylePro||[])));
+      addCard('Focus Area',foc, ()=>LIB.photo.focus);
+      addCard('Prop',obj, ()=> (nd?LIB.photo.objects:LIB.photo.objects.concat(LIB.photo.objectsPro||[])));
+      if(act) addCard('Action / Energy',act, ()=> (LIB.photo.actions||[]).concat(LIB.photo.actionsPro||[]));
+      if(chaos){
+        const cPool = (LIB.photo.constraints || []).concat(LIB.photo.constraintsPro || []);
+        addCard('Constraint', choice(cPool), ()=>cPool);
+      }
+
+      parts.push(`Style: ${style}`,`Focus: ${foc}`,`Prop: ${obj}`); if(act) parts.push(`Action: ${act}`);
+    }
+
+    brief.textContent = parts.join(" | ");
+  }
+
+  // events
+  const copyToClipboard = () => {
+    const txt = brief.textContent;
+    if(!txt){ alert('Roll first.'); return; }
+    navigator.clipboard?.writeText(txt).then(()=>alert('Brief copied.'));
+  };
+
+  rollBtn.addEventListener('click', roll);
+  document.addEventListener('keydown', e=>{ if(e.key==='r') roll(); });
+  copyBtn.addEventListener('click', copyToClipboard);
+
+  // initial roll
+  roll();
+}
+
+// -------- INIT DECKS --------
+buildDeck('makeup');
+buildDeck('painting');
+buildDeck('drawing');
+buildDeck('fashion');
+buildDeck('photoshoot');
+
+// -------- TABS --------
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.deck').forEach(d=>d.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.target).classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
