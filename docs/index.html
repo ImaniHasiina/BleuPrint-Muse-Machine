@@ -66,7 +66,7 @@ h1{margin:0;font-size:18px;font-weight:800;color:#fff}
     <li>Tap <b>🎲 Roll</b> to get a simple do-this brief.</li>
     <li>Tap any prompt <b>pill</b> to <b>lock</b> it. Use the small <b>↻</b> on a card to reroll just that part.</li>
     <li>Use <b>ND-Friendly</b> for fewer choices. Use <b>Chaos Mode</b> to add one rule.</li>
-    <li>Don’t like the colors? Use the Palette’s <b>↻</b> to change colors only. (For Photography, toggle Palette on if you want colors.)</li>
+    <li>Don’t like the colors? Use the Palette’s <b>↻</b> to change colors only. (In Photography, toggle Palette if you want colors.)</li>
     <li>Tap <b>Copy Brief</b>, paste anywhere, and create.</li>
   </ol>
   <div class="tip">Tip: Make a series. Lock what you love, reroll one card, repeat 10 times.</div>
@@ -341,7 +341,7 @@ function buildDeck(rootId){
     cards.innerHTML=''; brief.textContent='';
     const nd = ndChk.checked; const chaos = ch.checked;
 
-    // Palette
+    // Palette: active for all decks; Photography shows only if toggle is on
     let getColors = null;
     if(rootId!=='photography' || (rootId==='photography' && photoPaletteChk.checked)){
       getColors = addPaletteCard(cards); // returns getter
@@ -349,15 +349,16 @@ function buildDeck(rootId){
 
     let sentence = '';
 
+    // --- MAKEUP: ND = default Full face, hide Placement card ---
     if(rootId==='makeup'){
-      const fin = pick(LIB.makeup.finish);
-      const place = pick(LIB.makeup.placement);
+      const fin  = pick(LIB.makeup.finish);
+      const place = nd ? "Full face" : pick(LIB.makeup.placement);
       const tech = pick(LIB.makeup.technique);
       const pool = nd ? LIB.makeup.idea : LIB.makeup.idea.concat(LIB.makeup.ideaPro);
       const idea = maybeCombo(pool);
 
       addCard(cards,'Finish', fin, ()=>LIB.makeup.finish);
-      addCard(cards,'Placement',place, ()=>LIB.makeup.placement);
+      if (!nd) addCard(cards,'Placement',place, ()=>LIB.makeup.placement);
       addCard(cards,'Move',tech, ()=>LIB.makeup.technique);
       addCard(cards,'Idea',idea, ()=> pool);
 
@@ -368,6 +369,7 @@ function buildDeck(rootId){
                  (rule ? ` Rule: ${rule}.` : '');
     }
 
+    // --- PAINTING: ND = only Medium + Idea (hide Surface/Move) ---
     if(rootId==='painting'){
       const med = pick(LIB.painting.medium);
       const surf = pick(LIB.painting.surface);
@@ -376,17 +378,19 @@ function buildDeck(rootId){
       const idea = maybeCombo(pool);
 
       addCard(cards,'Medium',med, ()=>LIB.painting.medium);
-      addCard(cards,'Surface',surf, ()=>LIB.painting.surface);
-      addCard(cards,'Move',tech, ()=>LIB.painting.technique);
+      if (!nd) addCard(cards,'Surface',surf, ()=>LIB.painting.surface);
+      if (!nd) addCard(cards,'Move',tech, ()=>LIB.painting.technique);
       addCard(cards,'Idea',idea, ()=> pool);
 
       let rule = '';
       if(chaos){ rule = oneConstraintCard(cards, LIB.painting.constraints); }
 
-      sentence = `Make a ${med.toLowerCase()} piece on ${surf.toLowerCase()} using ${tech.toLowerCase()}. Idea: ${idea}.` +
-                 (rule ? ` Rule: ${rule}.` : '');
+      sentence = nd
+        ? `Make a ${med.toLowerCase()} piece. Idea: ${idea}.` + (rule ? ` Rule: ${rule}.` : '')
+        : `Make a ${med.toLowerCase()} piece on ${surf.toLowerCase()} using ${tech.toLowerCase()}. Idea: ${idea}.` + (rule ? ` Rule: ${rule}.` : '');
     }
 
+    // --- DRAWING: ND = only Medium + Idea (hide Move) ---
     if(rootId==='drawing'){
       const med = pick(LIB.drawing.medium);
       const tech = pick(LIB.drawing.technique);
@@ -394,16 +398,18 @@ function buildDeck(rootId){
       const idea = maybeCombo(pool);
 
       addCard(cards,'Medium',med, ()=>LIB.drawing.medium);
-      addCard(cards,'Move',tech, ()=>LIB.drawing.technique);
+      if (!nd) addCard(cards,'Move',tech, ()=>LIB.drawing.technique);
       addCard(cards,'Idea',idea, ()=> pool);
 
       let rule = '';
       if(chaos){ rule = oneConstraintCard(cards, LIB.drawing.constraints); }
 
-      sentence = `Sketch with ${med.toLowerCase()} using ${tech.toLowerCase()}. Idea: ${idea}.` +
-                 (rule ? ` Rule: ${rule}.` : '');
+      sentence = nd
+        ? `Sketch with ${med.toLowerCase()}. Idea: ${idea}.` + (rule ? ` Rule: ${rule}.` : '')
+        : `Sketch with ${med.toLowerCase()} using ${tech.toLowerCase()}. Idea: ${idea}.` + (rule ? ` Rule: ${rule}.` : '');
     }
 
+    // --- FASHION: ND = Style + Top/Bottom + Idea (hide extras) ---
     if(rootId==='fashion'){
       const look = pick(LIB.fashion.look);
       const top = pick(LIB.fashion.tops);
@@ -428,6 +434,7 @@ function buildDeck(rootId){
                  (rule ? ` Rule: ${rule}.` : '');
     }
 
+    // --- PHOTOGRAPHY: ND = no Portrait Focus/Action (keeps Subject/Scene/Light/Style/Prop) ---
     if(rootId==='photography'){
       const stylePool = nd ? LIB.photography.style : LIB.photography.style.concat(LIB.photography.stylePro);
       const style = maybeCombo(stylePool);
@@ -439,7 +446,7 @@ function buildDeck(rootId){
       addCard(cards,'Subject',subject, ()=>LIB.photography.subject);
 
       let portraitFocus = '';
-      if(subject === 'Person' || subject === 'Group'){
+      if(!nd && (subject === 'Person' || subject === 'Group')){
         portraitFocus = pick(LIB.photography.focusPortrait);
         addCard(cards,'Portrait Focus',portraitFocus, ()=>LIB.photography.focusPortrait);
       }
@@ -450,7 +457,7 @@ function buildDeck(rootId){
       const prop = pick(propPool);
       addCard(cards,'Prop',prop, ()=> propPool);
 
-      if(subject === 'Person' || subject === 'Group'){
+      if(!nd && (subject === 'Person' || subject === 'Group')){
         const actPool = nd ? LIB.photography.actions : LIB.photography.actions.concat(LIB.photography.actionsPro);
         const act = pick(actPool);
         addCard(cards,'Action',act, ()=> actPool);
@@ -458,7 +465,7 @@ function buildDeck(rootId){
 
       const cpool = (LIB.photography.constraints||[]).concat(LIB.photography.constraintsPro||[]);
       let rule = '';
-      if(ch){ rule = oneConstraintCard(cards, cpool); }
+      if(chaos){ rule = oneConstraintCard(cards, cpool); }
 
       const subText = subject.toLowerCase();
       const pf = portraitFocus ? `, ${portraitFocus.toLowerCase()}` : '';
@@ -466,7 +473,7 @@ function buildDeck(rootId){
                  (rule ? ` Rule: ${rule}.` : '');
     }
 
-    // Append colors if palette is present
+    // Append colors if palette is present (all decks except Photography unless toggled on)
     if(getColors){
       const colors = getColors();
       if(colors.length) sentence += ` Colors: ${colors.join(' + ')}.`;
