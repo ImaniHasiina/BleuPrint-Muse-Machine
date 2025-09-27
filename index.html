@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BleuPrint Muse Machine</title>
+<meta name="description" content="Roll the dice, get a brief, make the art. ADHD-friendly prompts for makeup, fashion, drawing, painting, and photography.">
+<style>
+:root{--bleu:#007BA7;--charcoal:#0B0C0F;--bone:#F3F4F6;--card:#111317;--line:#1F2430;--muted:#9FB0C7}
+*{box-sizing:border-box}
+body{margin:0;background:var(--charcoal);color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+header{padding:18px 14px;border-bottom:1px solid var(--line);text-align:center;position:relative}
+h1{margin:0;font-size:18px;font-weight:800;color:#fff}
+.sub{margin-top:6px;color:var(--muted);font-size:12px}
+
+.help-wrap{position:absolute;top:14px;right:14px;display:flex;gap:8px}
+.help-btn{background:#0E1218;border:1px solid var(--line);color:#EAF1FF;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer}
+.howto{display:none;background:#0E1218;border-top:1px solid var(--line);padding:12px 14px;text-align:left}
+.howto.open{display:block}
+.howto h2{margin:0 0 8px;font-size:14px}
+.howto ol{margin:0;padding-left:18px}
+.howto li{margin:6px 0;font-size:13px;color:#D7E1F0}
+.howto .tip{margin-top:10px;color:#9FB0C7;font-size:12px}
+
+.tabs{display:flex;gap:6px;flex-wrap:wrap;padding:12px 10px 0}
+.tab{padding:8px 10px;background:#0E1218;border:1px solid var(--line);border-radius:10px;font-size:13px;cursor:pointer}
+.tab.active{outline:2px solid var(--bleu)}
+.deck{display:none;padding:12px 10px 26px}
+.deck.active{display:block}
+.controls{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 10px}
+.btn{background:linear-gradient(135deg,var(--bleu),#5a9fc1);border:0;color:#fff;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer}
+.btn.ghost{background:#0E1218;border:1px solid var(--line)}
+.toggle{display:inline-flex;align-items:center;gap:8px;background:#0E1218;border:1px solid var(--line);padding:8px 10px;border-radius:10px;font-size:12px}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px}
+.card h3{margin:0 0 8px;font-size:13px;color:#D7E1F0;position:relative;padding-right:28px}
+.pill{display:inline-block;background:#0D1016;border:1px solid var(--line);border-radius:8px;padding:6px 8px;margin:4px 4px 0 0;font-size:12px;user-select:none}
+.pill.locked{outline:2px solid var(--bleu);background:#0b1220}
+.card .mini{position:absolute;top:-2px;right:0;font-size:11px;background:#0E1218;border:1px solid var(--line);
+  padding:4px 6px;border-radius:6px;cursor:pointer;line-height:1}
+
+.palette{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+.sw{width:18px;height:18px;border-radius:4px;border:1px solid #222}
+.sw-label{margin-top:6px;font-size:12px;color:#C9D1E3}
+
+.brief{margin-top:12px;background:#0D1016;border:1px dashed var(--line);border-radius:12px;padding:10px;font-size:12px;color:#C9D1E3;white-space:pre-wrap}
+.footer{padding:12px;color:var(--muted);font-size:11px;text-align:center}
+.hint{color:var(--muted);font-size:11px;margin-left:6px}
+
+@media (max-width:480px){.pill{font-size:11px}.tab{font-size:12px}}
+</style>
+</head>
+<body>
+<header>
+  <h1>BleuPrint Muse Machine</h1>
+  <div class="sub">Roll the dice • Receive a prompt • Make some art!</div>
+  <div class="help-wrap">
+    <button class="help-btn" id="howto-toggle">How to Use</button>
+  </div>
+</header>
+
+<div class="howto" id="howto-panel">
+  <h2>How to Use</h2>
+  <ol>
+    <li>Select a deck (Makeup, Painting, Drawing, Fashion, or Photography).</li>
+    <li>Tap <b>🎲 Roll</b> to get a simple do-this brief.</li>
+    <li>Tap any prompt <b>pill</b> to <b>lock</b> it. Use the small <b>↻</b> on a card to reroll just that part.</li>
+    <li>Use <b>ND-Friendly</b> for fewer choices. Use <b>Chaos Mode</b> to add one rule.</li>
+    <li>Don’t like the colors? Use the Palette’s <b>↻</b> to change colors only. (For Photography, toggle Palette on if you want colors.)</li>
+    <li>Tap <b>Copy Brief</b>, paste anywhere, and create.</li>
+  </ol>
+  <div class="tip">Tip: Make a series. Lock what you love, reroll one card, repeat 10 times.</div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-target="makeup">Makeup</div>
+  <div class="tab" data-target="painting">Painting</div>
+  <div class="tab" data-target="drawing">Drawing</div>
+  <div class="tab" data-target="fashion">Fashion</div>
+  <div class="tab" data-target="photography">Photography</div>
+</div>
+
+<!-- DECKS -->
+<div id="makeup" class="deck active"></div>
+<div id="painting" class="deck"></div>
+<div id="drawing" class="deck"></div>
+<div id="fashion" class="deck"></div>
+<div id="photography" class="deck"></div>
+
+<div class="footer">v1.3 • #BleuPrintMuseMachine #ChaosToCanvas #ADHDArtist #BlackArtists #CreativeMakeup #VisualArtist #ArtChallenge</div>
+
+<script>
+// ---------- PALETTE ----------
+const PALETTE = [
+ ["Cerulean","#007BA7"],["Bone","#F3F4F6"],["Espresso","#3B2F2F"],["Violet","#7B5FC8"],["Neon Green","#39FF14"],
+ ["Neon Pink","#FF36B3"],["Chrome Silver","#C0C0C0"],["Gold","#D4AF37"],["Black","#000000"],["Red","#E1262E"],
+ ["Tangerine Orange","#FF7A00"],["Sky Blue","#76B8FF"],["Olive Green","#556B2F"],["Peach","#FFB38A"],
+ ["Teal","#2CB1A1"],["White","#FFFFFF"],["Emerald","#00A86B"],["Bronze","#CD7F32"],["Lavender","#C8A2C8"],["Fuchsia","#FF00FF"]
+];
+function randomPalette(){
+  const n = 1 + Math.floor(Math.random()*4);
+  const idx = new Set(); const out=[];
+  while(out.length<n){
+    const i = Math.floor(Math.random()*PALETTE.length);
+    if(idx.has(i)) continue; idx.add(i); out.push(PALETTE[i]);
+  }
+  return out;
+}
+function buildPaletteNode(){
+  const wrap = document.createElement('div'); wrap.className='palette';
+  const names = [];
+  const picked = randomPalette();
+  picked.forEach(([name,hex])=>{
+    const sw = document.createElement('div'); sw.className='sw'; sw.style.background=hex; sw.title=name; wrap.appendChild(sw);
+    names.push(name);
+  });
+  const label = document.createElement('div'); label.className='sw-label'; label.textContent = names.join(' + ');
+  const container = document.createElement('div'); container.appendChild(wrap); container.appendChild(label);
+  return {node:container, names};
+}
+// returns a getter for the latest palette names
+function addPaletteCard(container){
+  const c = document.createElement('div'); c.className='card';
+  const h = document.createElement('h3'); h.textContent='Palette'; c.appendChild(h);
+  const mini = document.createElement('button'); mini.className='mini'; mini.textContent='↻'; h.appendChild(mini);
+  const slot = document.createElement('div'); c.appendChild(slot);
+
+  let names = [];
+  function render(){
+    slot.innerHTML='';
+    const {node, names: picked} = buildPaletteNode();
+    names = picked;
+    slot.appendChild(node);
+  }
+  render();
+  mini.addEventListener('click', render);
+  container.appendChild(c);
+  return () => names.slice();
+}
+
+const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+function maybeCombo(arr){
+  if(Math.random()<0.25){
+    const a = pick(arr); let b = pick(arr); if(b===a){ b = arr[(arr.indexOf(a)+1)%arr.length]; }
+    return `${a} + ${b}`;
+  }
+  return pick(arr);
+}
+function oneConstraintCard(container, pool){
+  const c = pick(pool);
+  const card = document.createElement('div'); card.className='card';
+  const h = document.createElement('h3'); h.textContent='Rule'; card.appendChild(h);
+  const mini = document.createElement('button'); mini.className='mini'; mini.textContent='↻'; h.appendChild(mini);
+  const pill = document.createElement('span'); pill.className='pill'; pill.textContent=c;
+  card.appendChild(pill);
+  mini.addEventListener('click', ()=>{
+    const n = pick(pool);
+    pill.textContent = n;
+  });
+  container.appendChild(card);
+  return c;
+}
+function addCard(container, title, items, getItems){
+  const c = document.createElement('div'); c.className='card';
+  const h = document.createElement('h3'); h.textContent=title; c.appendChild(h);
+  const mini = document.createElement('button'); mini.className='mini'; mini.textContent='↻'; h.appendChild(mini);
+
+  (Array.isArray(items)?items:[items]).forEach(t=>{
+    const p=document.createElement('span'); p.className='pill'; p.textContent=t;
+    p.addEventListener('click', ()=> p.classList.toggle('locked'));
+    c.appendChild(p);
+  });
+
+  mini.addEventListener('click', ()=> {
+    const pills = Array.from(c.querySelectorAll('.pill:not(.locked)'));
+    const pool = getItems();
+    pills.forEach(p => { p.textContent = pool[Math.floor(Math.random()*pool.length)]; });
+  });
+  container.appendChild(c);
+}
+
+// ---------- LIBRARIES ----------
+const LIB = {
+  makeup:{
+    finish:["Glossy","Matte","Chrome/Metallic","Neon / UV","Iridescent","Velvet","Wet look","Watercolor blend","Marble","Smoky"],
+    placement:["Full face","Eyes","Lips","Cheeks","Brows/forehead","Neck/chest/hands","Half face","Tiny accent only"],
+    technique:[
+      "Graphic liner (clean, sharp)","Thread-lines (ultra thin squiggles)","Negative-space liner","Floating crease","Reverse wing",
+      "Waterline pop","Color blocking","Cut-crease sculpt","Airbrush glass-skin veil","Soft-focus airbrush edges",
+      "Stipple / freckle texture","Smoked edges (blurred)","Drip / bleed effect","Chrome mapping (metallic H/L)",
+      "Marble veining","Watercolor wash","Pixel / 8-bit blocks","Illusion seams (cracks/stitches)","Halo / crown rings",
+      "UV glow tracing (neon lines)","Rhinestone path (no glitter)","Tape-mask edges (hard lines)"
+    ],
+    idea:[
+      "Lightning bolts","Shattered glass","Dripping chrome","Flowers & vines","Waves/water","Flames","Stars","Clouds",
+      "Graffiti lines","Broken statue","Thread-like linework","Smoke","Bubbles","Chains","Animal print","Halo/crown","Abstract squiggles"
+    ],
+    ideaPro:[
+      "Optical-illusion cracks","Chrome face mapping","Moiré line net","Circuit board tracings","Prism/refraction split light",
+      "Heat-map gradient","Duochrome shift","Geode edge","Stained glass panels","Textile imprint","Halftone dots",
+      "Biomech seams","Oil-slick pool","Negative-space cutouts","Chrome drip over matte"
+    ],
+    constraints:[
+      "Use 3 colors max","15 minutes only","No brushes (tools/hands)","Non-dominant hand","One side only","Hide a tiny faith symbol",
+      "Only use what’s on your desk","Blend with one tool","No mirror","Stop after 10 steps"
+    ]
+  },
+
+  painting:{
+    medium:["Acrylic","Gouache","Ink","Markers","Mixed media","Pastel/chalk","Oil (smooth)","Charcoal","Digital style"],
+    surface:["Canvas","Watercolor paper","Bristol","Cardboard","Wood panel"],
+    technique:["Palette knife","Thin pen lines","Dry brush","Drips","Glazing","Scumbling","Spray paint","Pastel blend","Marker pop-art"],
+    ideaEasy:["Dots","Zig-zags","Spirals","Checkerboard","Stripes","Constellation dots/lines","Hearts","Eyes repeat","Lips repeat","Leaves","Branches","Rain","Sun/Moon","Stars","Butterfly","Feathers","Music notes","Keys","Chains","Halo","Drips","Splatter","Grid","Puzzle pieces","Brick wall"],
+    ideaAdv:[
+      "Waves/water","Flames","Broken statue","Clouds","Graffiti lines","Lightning bolts","Thread tangles","Shattered glass","Chrome drips","Bubbles","Stained glass","Fabric folds","Animal print","Marbling","Detailed crown/halo",
+      "Anatomy study: hands (3 poses)","Portrait with rim light","Foreshortened arm","Satin folds","Reflective sphere in a room","Glass refraction","Chrome reflections","Wet highlights","Smoke wisps on a face","Water splash freeze","Blinds shadow across face","Backlit silhouette edge","Animal skull + flowers","Insect wing macro","Cracked stone bust","Overlapping translucent shapes","Hair texture: curls vs straight","Complex braids","Hands holding glass","Draped figure under sheet"
+    ],
+    ideaPro:[
+      "Escher stairs","Impossible triangle","Two light sources","Portrait in warped metal","Fish-eye room","2-point night street",
+      "Overhead crowd","Underwater figure","Glass + chrome still life","Puddle reflections","Translucent jelly/resin","Back muscles study",
+      "Extreme expression","Motion blur figure","Hands with screen glow","Through textured glass","Multi-exposure face","Macro eye reflection","Creature kitbash","Surreal collage"
+    ],
+    constraints:["15 minutes only","Non-dominant hand","No eraser","Use 1 tool only","Hand-size canvas","Fill entire page","Exactly 2 colors"]
+  },
+
+  drawing:{
+    medium:["Graphite","Charcoal","Ink (brush/pen)","Alcohol markers","Colored pencil","Digital sketch"],
+    technique:[
+      "Cross-hatching","Stippling","Contour line","Gesture sketch","Negative space","Blind contour","Continuous line",
+      "Scribble shading","Loose sketch + refine later","Grid build-up","Erased highlights","Tonal blocks","Feathered shading",
+      "Hatching gradients","Smudge shading","Pointillism dots","Line weight play","Overlapping silhouettes","Quick thumbnails","Layered tracing"
+    ],
+    ideaEasy:["Dots","Zig-zags","Spirals","Checkerboard","Stripes","Constellation dots/lines","Hearts","Eyes repeat","Lips repeat","Leaves","Branches","Rain","Sun/Moon","Stars","Butterfly","Feathers","Music notes","Keys","Chains","Halo","Drips","Splatter","Grid","Puzzle pieces","Brick wall"],
+    ideaAdv:[
+      "Waves/water","Flames","Broken statue","Clouds","Graffiti lines","Lightning bolts","Thread tangles","Shattered glass","Bubbles","Stained glass","Fabric folds","Animal print","Marbling",
+      "Hands in motion (3)","Portrait with rim light","Foreshortened arm","Satin folds","Reflective sphere","Glass refraction","Chrome reflections","Wet-surface highlights","Smoke wisps on face","Water splash","Blinds shadow","Backlit silhouette edge","Animal skull + flowers","Insect wing macro","Cracked stone bust","Overlapping translucent shapes","Hair texture","Complex braids","Hands with glass","Draped figure under sheet"
+    ],
+    ideaPro:[
+      "Escher stairs","Impossible triangle","Two light sources","Warped metal portrait","Fish-eye interior","2-point rain street",
+      "Overhead crowd","Underwater figure","Chrome + glass still life","Puddle reflections","Translucent jelly","Back anatomy",
+      "Extreme expression","Motion blur","Hands + light","Textured glass","Multi-exposure face","Macro eye scene","Creature kitbash","Surreal collage"
+    ],
+    constraints:["15 minutes only","Non-dominant hand","No eraser","Use 1 tool only","Hand-size paper","Fill entire page","Exactly 2 colors"]
+  },
+
+  fashion:{
+    look:["Grunge","Sleek/minimal","Avant-garde","Deconstructed","Streetwear layered","Couture drama","Futuristic metallic","Retro/vintage","Monochrome fit","Gender-fluid styling"],
+    tops:["Corset/bustier","Blazer/structured jacket","Oversized hoodie","Button-up shirt","Crop top","Sheer layer","Graphic tee","Knit/sweater"],
+    bottoms:["Wide-leg trousers","Cargo pants","Jeans (distressed/patch)","Mini skirt","Maxi skirt","Tailored shorts","Leggings/bodycon","Skort/asym"],
+    shoes:["Sneakers","Boots (ankle/thigh)","Heels","Flats/loafers","Sandals"],
+    accessories:["Jewelry","Bag/clutch","Hat/headwear","Belt","Sunglasses","Scarf/wrap"],
+    outerwear:["Trench","Cape/dramatic","Bomber","Denim jacket","Puffer","Kimono/drape"],
+    idea:["Corset","Denim remix","Tulle drama","Metallics","Oversized fit","Asymmetry","Chains/hardware","Sheer layers","Patchwork","Bold pattern","Fringe","Utility straps","Futuristic armor","Soft romantic"],
+    ideaPro:[
+      "Sculptural silhouette","Modular panels","Visible deconstruction","Armored corsetry","Texture mashup","Asymmetric drape with train",
+      "Extreme proportions mono","Metallic stack","Utility webbing/straps","Negative-space cutouts"
+    ],
+    actions:["Runway strut","Twirl/jump","Seated floor pose","Close-up accessory","Dramatic lean","Garment-as-prop","Hide face with piece","Duo/group"],
+    actionsPro:["High-speed spin","Wind/fan test","Pose inside garment","Partner lift/pull","Low-angle crawl","Step off a block"],
+    constraints:["3 garments max","Thrifted only","Black + 1 pop color","Must include oversized","No accessories","No shoes shown","20-minute style limit","Wear something 'wrong'"],
+    constraintsPro:["Zero-sew styling","All-thrift flip","Two garments only","Single color, many textures","No closures—wrap/clip","Oversize + fitted contrast"]
+  },
+
+  photography:{
+    style:["Clean studio","Moody dark","Bright pop","Street real","Soft dream","Vintage film","Color splash","Nature","Retro vibe","Futuristic shine","Minimal plain","Grainy old photo","Glow haze","Black and white","Pastel soft","Crisp high contrast","Flat flash","Muted tones"],
+    stylePro:["Hard light lines","Two-color gels","Flash + blur","Fog backlight","Project shapes","Light leaks","Double exposure","Prism split"],
+
+    subject:[
+      "Person","Group","Hands","Hair","Silhouette","Shadow",
+      "Building","Skyline","Street scene","Car","Bike","Bridge",
+      "Plant","Flower","Tree","Animal","Bird","Bug",
+      "Product","Bottle","Jar","Can","Makeup item","Jewelry","Shoe","Bag","Clothes on hanger","Food plate","Cup/Mug","Book","Vinyl","Phone","Laptop","Screen","Camera","Toy","Tool","Keys","Watch","Glasses"
+    ],
+    focusPortrait:["Face close-up","Half body","Full body","Hands only","Feet/shoes","Hair detail","Eyes only","Smile","Back turned","Over-the-shoulder","Profile","Shadow only"],
+
+    place:[
+      "Plain wall","Seamless paper","Window light","Stairs","Parking lot","Hallway","Grass field","Street corner","Garage","Kitchen",
+      "Bathroom tiles","Elevator","Rooftop","Alley","Bed/couch","Car seat","Mirror wall","Brick wall","Graffiti wall","Fence","Garden",
+      "Balcony","Crosswalk","Corner store","Library","Mall","Playground","Warehouse","Bridge","Poolside","Closet","Basement","Stage",
+      "Desk setup","Shelf","Workbench","Storefront","Abandoned building","Beach","Forest path","Pier","Overpass","Skate park"
+    ],
+    light:[
+      "Window side light","Backlight glow","Overhead light","Sun shade","Hard shadow","Cloudy soft","Golden hour","Night light","Flash only",
+      "Lamp light","Fairy lights","Street light","Colored bulb","Candle","Phone light","Projector","Car headlights","TV glow","Fire light","Neon sign"
+    ],
+    props:[
+      "Chair","Mirror","Flowers","Fabric sheet","Plastic wrap","Glass cup","Balloons","Newspaper","Phone light","Disco ball","Frame","Umbrella",
+      "Cardboard","Fruit","Food plate","Candle","Bottle","Bag","Hat","Sunglasses","Jewelry","Shoes","Book","Vinyl record","Basketball",
+      "Skateboard","Headphones","Drink can","Mask","Toy","Chain","Guitar","Feathers","Pillow","Blanket","Flag","Rope","Fan","Plants","Cups",
+      "Paint brush","Old TV","Clock","Laptop","Phone","Tape","Foil","Rug","Water spray","Bubble wrap","Magnifying glass","CD/DVD"
+    ],
+    propsPro:["Fog/haze","Shower spray","Mylar/foil","Projector","Prism/crystal","Colored smoke","Laser pointer","Water sheet"],
+    actions:[
+      "Walk past","Spin","Small jump","Hair flip","Sit on floor","Lean on wall","Look away","Cover face peek","Reach to camera","Laugh big","Whisper close",
+      "Balance on one foot","Shout","Stretch arms wide","Point","Dance move","Crawl low","Hide behind prop","Throw object","Hold something up","Rest head on hand",
+      "Tilt head back","Hands in pockets","Cross arms","Lean forward","Stand on tiptoe","Fall back on bed","Step on chair","Spin fabric","Kick foot out","Clap","Snap fingers","Blow kiss"
+    ],
+    actionsPro:["Run blur","Fabric throw","Mirror hands","Shadow play","Gel hair light","Jump with fan wind","Spin with long skirt","Double exposure move","Partner lift","Group pile","Hand reach symmetry"],
+    constraints:[
+      "One prop only","Sit or floor only","No backdrop","Outside only","Natural light only","One lens only","No standing poses","Black and white",
+      "Shoot through glass","Wide shots only","No editing","Only selfies","Hands must show","Shoot from above","Shoot from below","Profile only","Candid only","Eyes closed","No smile","One color only"
+    ],
+    constraintsPro:[
+      "One hard light + one gel","30-second shoot","Reflections only","Hands in frame","No faces shown","Motion blur only","Shadow-only shots",
+      "Extreme crop close-ups","Shoot without looking","Double mirror rule"
+    ]
+  }
+};
+
+// ---------- BUILD A DECK ----------
+function buildDeck(rootId){
+  const root = document.getElementById(rootId);
+  root.innerHTML = '';
+
+  const controls = document.createElement('div'); controls.className='controls';
+  const rollBtn = document.createElement('button'); rollBtn.className='btn'; rollBtn.textContent='🎲 Roll';
+  const ndLabel = document.createElement('label'); ndLabel.className='toggle';
+  const ndChk = document.createElement('input'); ndChk.type='checkbox'; ndLabel.appendChild(ndChk); ndLabel.appendChild(document.createTextNode(' ND-Friendly'));
+  const chLabel = document.createElement('label'); chLabel.className='toggle';
+  const ch = document.createElement('input'); ch.type='checkbox'; chLabel.appendChild(ch); chLabel.appendChild(document.createTextNode(' Chaos Mode'));
+
+  // Photography-only palette toggle
+  let photoPaletteLabel = null, photoPaletteChk = null;
+  if(rootId==='photography'){
+    photoPaletteLabel = document.createElement('label'); photoPaletteLabel.className='toggle';
+    photoPaletteChk = document.createElement('input'); photoPaletteChk.type='checkbox';
+    photoPaletteLabel.appendChild(photoPaletteChk);
+    photoPaletteLabel.appendChild(document.createTextNode(' Palette'));
+  }
+
+  const copyBtn = document.createElement('button'); copyBtn.className='btn ghost'; copyBtn.textContent='📋 Copy Brief';
+  controls.appendChild(rollBtn); controls.appendChild(ndLabel); controls.appendChild(chLabel);
+  if(photoPaletteLabel) controls.appendChild(photoPaletteLabel);
+  controls.appendChild(copyBtn);
+  root.appendChild(controls);
+
+  const cards = document.createElement('div'); cards.className='cards'; root.appendChild(cards);
+  const brief = document.createElement('div'); brief.className='brief'; root.appendChild(brief);
+
+  function roll(){
+    cards.innerHTML=''; brief.textContent='';
+    const nd = ndChk.checked; const chaos = ch.checked;
+
+    // Palette
+    let getColors = null;
+    if(rootId!=='photography' || (rootId==='photography' && photoPaletteChk.checked)){
+      getColors = addPaletteCard(cards); // returns getter
+    }
+
+    let sentence = '';
+
+    if(rootId==='makeup'){
+      const fin = pick(LIB.makeup.finish);
+      const place = pick(LIB.makeup.placement);
+      const tech = pick(LIB.makeup.technique);
+      const pool = nd ? LIB.makeup.idea : LIB.makeup.idea.concat(LIB.makeup.ideaPro);
+      const idea = maybeCombo(pool);
+
+      addCard(cards,'Finish', fin, ()=>LIB.makeup.finish);
+      addCard(cards,'Placement',place, ()=>LIB.makeup.placement);
+      addCard(cards,'Move',tech, ()=>LIB.makeup.technique);
+      addCard(cards,'Idea',idea, ()=> pool);
+
+      let rule = '';
+      if(chaos){ rule = oneConstraintCard(cards, LIB.makeup.constraints); }
+
+      sentence = `Do ${tech.toLowerCase()} on ${place.toLowerCase()} with a ${fin.toLowerCase()} finish. Idea: ${idea}.` +
+                 (rule ? ` Rule: ${rule}.` : '');
+    }
+
+    if(rootId==='painting'){
+      const med = pick(LIB.painting.medium);
+      const surf = pick(LIB.painting.surface);
+      const tech = pick(LIB.painting.technique);
+      const pool = nd ? LIB.painting.ideaEasy : LIB.painting.ideaEasy.concat(LIB.painting.ideaAdv, LIB.painting.ideaPro);
+      const idea = maybeCombo(pool);
+
+      addCard(cards,'Medium',med, ()=>LIB.painting.medium);
+      addCard(cards,'Surface',surf, ()=>LIB.painting.surface);
+      addCard(cards,'Move',tech, ()=>LIB.painting.technique);
+      addCard(cards,'Idea',idea, ()=> pool);
+
+      let rule = '';
+      if(chaos){ rule = oneConstraintCard(cards, LIB.painting.constraints); }
+
+      sentence = `Make a ${med.toLowerCase()} piece on ${surf.toLowerCase()} using ${tech.toLowerCase()}. Idea: ${idea}.` +
+                 (rule ? ` Rule: ${rule}.` : '');
+    }
+
+    if(rootId==='drawing'){
+      const med = pick(LIB.drawing.medium);
+      const tech = pick(LIB.drawing.technique);
+      const pool = nd ? LIB.drawing.ideaEasy : LIB.drawing.ideaEasy.concat(LIB.drawing.ideaAdv, LIB.drawing.ideaPro);
+      const idea = maybeCombo(pool);
+
+      addCard(cards,'Medium',med, ()=>LIB.drawing.medium);
+      addCard(cards,'Move',tech, ()=>LIB.drawing.technique);
+      addCard(cards,'Idea',idea, ()=> pool);
+
+      let rule = '';
+      if(chaos){ rule = oneConstraintCard(cards, LIB.drawing.constraints); }
+
+      sentence = `Sketch with ${med.toLowerCase()} using ${tech.toLowerCase()}. Idea: ${idea}.` +
+                 (rule ? ` Rule: ${rule}.` : '');
+    }
+
+    if(rootId==='fashion'){
+      const look = pick(LIB.fashion.look);
+      const top = pick(LIB.fashion.tops);
+      const bottom = pick(LIB.fashion.bottoms);
+      const pool = nd ? LIB.fashion.idea : LIB.fashion.idea.concat(LIB.fashion.ideaPro);
+      const idea = maybeCombo(pool);
+
+      addCard(cards,'Style',look, ()=>LIB.fashion.look);
+      addCard(cards,'Focus Pieces',[top,bottom], ()=>LIB.fashion.tops.concat(LIB.fashion.bottoms));
+      addCard(cards,'Idea',idea, ()=> pool);
+
+      if(!nd){
+        if(Math.random()<0.5) addCard(cards,'Outerwear',pick(LIB.fashion.outerwear), ()=>LIB.fashion.outerwear);
+        addCard(cards,'Shoes',pick(LIB.fashion.shoes), ()=>LIB.fashion.shoes);
+        addCard(cards,'Accessory',pick(LIB.fashion.accessories), ()=>LIB.fashion.accessories);
+      }
+
+      let rule = '';
+      if(chaos){ const pool2 = (LIB.fashion.constraints||[]).concat(LIB.fashion.constraintsPro||[]); rule = oneConstraintCard(cards, pool2); }
+
+      sentence = `Style a ${look.toLowerCase()} outfit with ${[top,bottom].join(' + ').toLowerCase()}. Idea: ${idea}.` +
+                 (rule ? ` Rule: ${rule}.` : '');
+    }
+
+    if(rootId==='photography'){
+      const stylePool = nd ? LIB.photography.style : LIB.photography.style.concat(LIB.photography.stylePro);
+      const style = maybeCombo(stylePool);
+      const subject = pick(LIB.photography.subject);
+      const place = pick(LIB.photography.place);
+      const light = pick(LIB.photography.light);
+
+      addCard(cards,'Style',style, ()=> stylePool);
+      addCard(cards,'Subject',subject, ()=>LIB.photography.subject);
+
+      let portraitFocus = '';
+      if(subject === 'Person' || subject === 'Group'){
+        portraitFocus = pick(LIB.photography.focusPortrait);
+        addCard(cards,'Portrait Focus',portraitFocus, ()=>LIB.photography.focusPortrait);
+      }
+      addCard(cards,'Scene',place, ()=>LIB.photography.place);
+      addCard(cards,'Light',light, ()=>LIB.photography.light);
+
+      const propPool = nd ? LIB.photography.props : LIB.photography.props.concat(LIB.photography.propsPro);
+      const prop = pick(propPool);
+      addCard(cards,'Prop',prop, ()=> propPool);
+
+      if(subject === 'Person' || subject === 'Group'){
+        const actPool = nd ? LIB.photography.actions : LIB.photography.actions.concat(LIB.photography.actionsPro);
+        const act = pick(actPool);
+        addCard(cards,'Action',act, ()=> actPool);
+      }
+
+      const cpool = (LIB.photography.constraints||[]).concat(LIB.photography.constraintsPro||[]);
+      let rule = '';
+      if(ch){ rule = oneConstraintCard(cards, cpool); }
+
+      const subText = subject.toLowerCase();
+      const pf = portraitFocus ? `, ${portraitFocus.toLowerCase()}` : '';
+      sentence = `Shoot ${subText}${pf} in ${place.toLowerCase()} with ${style.toLowerCase()} style and ${light.toLowerCase()}. Prop: ${prop.toLowerCase()}.` +
+                 (rule ? ` Rule: ${rule}.` : '');
+    }
+
+    // Append colors if palette is present
+    if(getColors){
+      const colors = getColors();
+      if(colors.length) sentence += ` Colors: ${colors.join(' + ')}.`;
+    }
+
+    brief.textContent = sentence;
+  }
+
+  // events
+  rollBtn.addEventListener('click', roll);
+  document.addEventListener('keydown', e=>{ if(e.key==='r') roll(); });
+
+  // copy brief (plain text everywhere)
+  copyBtn.addEventListener('click', ()=>{
+    if(!brief.textContent){ alert('Roll first.'); return; }
+    const text = brief.textContent.trim();
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(()=>alert('Brief copied.'));
+    }else{
+      const ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta);
+      ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+      alert('Brief copied.');
+    }
+  });
+
+  // initial roll
+  roll();
+}
+
+// init decks
+buildDeck('makeup');
+buildDeck('painting');
+buildDeck('drawing');
+buildDeck('fashion');
+buildDeck('photography');
+
+// tabs
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.deck').forEach(d=>d.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.target).classList.add('active');
+  });
+});
+
+// how-to toggle
+document.getElementById('howto-toggle').addEventListener('click', ()=>{
+  document.getElementById('howto-panel').classList.toggle('open');
+});
+</script>
+</body>
+</html>
